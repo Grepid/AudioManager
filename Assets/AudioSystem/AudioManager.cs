@@ -5,50 +5,110 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Collections;
 using System.Linq;
+using UnityEngine.Pool;
+
+//TO-DO
+
+//Change everything to Static methods referencing the instance
+//Add Instance Null checks to the start of every method
+//Move from instantiate every call to a grab from a pool
+//Add every form of action you can take on an AudioPlayer to the AudioPlayer class passing "this" as the AudioPlayer parameter
+//Allow binding of multiple string methods to the end of audio player \\-||
+
 
 namespace AudioSystem
 {
     public class AudioManager : MonoBehaviour
     {
+
+        [Tooltip("The sole singleton instance of this class")]
+        private static AudioManager s_instance;
+        public static AudioManager Instance
+        {
+            get
+            {
+                if (s_instance == null)
+                {
+                    Debug.LogError("No Instance Found");
+                    return null;
+                }
+                return s_instance;
+            }
+        }
+
+
         [Tooltip("The name that the GameObject created when playing a sound will be given for identification purposes")]
         public string TempSoundSourceIdentifier;
 
-        [Tooltip("The list of sounds the game has to be able to play")]
-        [NonReorderable]
-        public Sound[] Sounds;
 
-        [Tooltip("The sole singleton instance of this class")]
-        public static AudioManager instance;
 
 
         [Tooltip("A dictionary of Sound Type to Volume Level for that type.")]
         //The cool thing about this new way of doing it, is if you want to add a new audio type with
         //a seperate audio level you can adjust, all you need to do is add the type to the Enum in the Sound class
         //and it will be perfectly synced up with the system. Then just create its own settings slider and done
-        public static Dictionary<SoundType, float> Volumes;
+        public static Dictionary<SoundType, float> s_Volumes;
 
-        [SerializeField] private float defaultFadeTime;
-
-        [SerializeField] private int debugIndexToPlay;
-        [SerializeField] private string debugNameToPlay;
-
-        public CustomAudioPlayer[] AllPlayersInScene
+        [Tooltip("The list of sounds the game has to be able to play")]
+        [NonReorderable]
+        public Sound[] Sounds;
+        public AudioPlayer[] AllPlayersInScene
         {
             get
             {
-                CustomAudioPlayer[] players = FindObjectsOfType<CustomAudioPlayer>();
+                AudioPlayer[] players = FindObjectsOfType<AudioPlayer>();
                 return players;
             }
         }
 
         [HideInInspector]
-        public CustomAudioPlayer currentMusic;
+        public AudioPlayer currentMusic;
 
-        public Dictionary<CustomAudioPlayer, Coroutine> overtimeEffects = new Dictionary<CustomAudioPlayer, Coroutine>();
+        public Dictionary<AudioPlayer, Coroutine> overtimeEffects = new Dictionary<AudioPlayer, Coroutine>();
+
+        private static List<AudioPlayer> m_allAudioInScene;
+        public static IReadOnlyList<AudioPlayer> AllAudioInScene => m_allAudioInScene.AsReadOnly();
+
+        public const float defaultFadeTime = 1;
+
+        #region Catches
+
+
+        private static bool ValidCheck()
+        {
+            bool result = false;
+            result |= InstanceNull();
+            result |= SoundsEmpty();
+            
+
+            return result;
+        }
+
+        private static bool InstanceNull()
+        {
+            if(s_instance == null)
+            {
+                Debug.LogError("AudioManager has no Instance");
+                return true;
+            }
+            return false;
+        }
+        private static bool SoundsEmpty()
+        {
+            if(Instance.Sounds.Length <= 0)
+            {
+                Debug.LogError("AudioManager cannot have 0 sounds");
+                return true;
+            }
+            return false;
+        }
+
+        #endregion
+
 
         private void Awake()
         {
-            if (instance == null) instance = this;
+            if (s_instance == null) s_instance = this;
             else
             {
                 Destroy(this);
@@ -60,32 +120,27 @@ namespace AudioSystem
         }
         private void Initialise()
         {
-            overtimeEffects = new Dictionary<CustomAudioPlayer, Coroutine>();
+            overtimeEffects = new Dictionary<AudioPlayer, Coroutine>();
             SetupVolumes();
-        }
-
-        private void Update()
-        {
-
         }
 
         /// <summary>
         /// This sets up a dictionary of SoundType to Float which can be referenced from anywhere to access the volume level for a given
         /// sound type. This method makes it really easy to associate the type of sound to a volume level.
         /// </summary>
-        private void SetupVolumes()
+        private static void SetupVolumes()
         {
             //Creates the empty dictionary
-            Volumes = new Dictionary<SoundType, float>();
+            s_Volumes = new Dictionary<SoundType, float>();
             //Loops through every type there is in the Enum
             foreach (SoundType type in Enum.GetValues(typeof(SoundType)))
             {
                 //Adds the type to the dictionary, and gives it a starting volume of 1 (100%)
-                Volumes.Add(type, 1);
+                s_Volumes.Add(type, 1);
             }
             // Will set the audio levels to what it was saved at afterwards. If nothing was found, will just leave it at 100%
             //TODO though
-            LoadSavedAudioLevels();
+            Instance.LoadSavedAudioLevels();
         }
         private void LoadSavedAudioLevels()
         {
@@ -100,34 +155,34 @@ namespace AudioSystem
         /// </summary>
         /// <param name="name"></param>
         /// <returns>CustomAudioPlayer attached to a GameObject for the sound played</returns>
-        private CustomAudioPlayer DefaultPlay(string name)
+        public static AudioPlayer DefaultPlay(string name)
         {
             GameObject focus = new GameObject();
-            Sound s = Array.Find(Sounds, sound => sound.name == name);
+            Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
             if (s == null)
             {
                 Debug.LogWarning("Sound not found");
                 s = new Sound();
             }
 
-            focus.name = TempSoundSourceIdentifier;
+            focus.name = Instance.TempSoundSourceIdentifier;
 
             AudioSource audSource = focus.AddComponent<AudioSource>();
-            AdjustAudioSource(audSource, s);
+            Instance.AdjustAudioSource(audSource, s);
 
-            CustomAudioPlayer player = focus.AddComponent<CustomAudioPlayer>();
-            player.audioSource = audSource;
-            player.soundClass = s;
+            AudioPlayer player = focus.AddComponent<AudioPlayer>();
+            player.AudioSource = audSource;
+            player.SoundClass = s;
 
 
 
-            audSource.volume = SoundTypeVolume(s);
+            audSource.volume = Instance.SoundTypeVolume(s);
 
             audSource.Play();
 
             //if (!audSource.loop) StartCoroutine(DestroyUsedAudio(focus));
 
-
+            m_allAudioInScene.Add(player);
 
             return player;
         }
@@ -139,9 +194,9 @@ namespace AudioSystem
         /// </summary>
         /// <param name="name"></param>
         /// <returns>The associated CustomAudioPlayer with the Sound Played</returns>
-        public CustomAudioPlayer Play(string name)
+        public AudioPlayer Play(string name)
         {
-            CustomAudioPlayer player;
+            AudioPlayer player;
             player = Play(name, Camera.main.gameObject);
             return player;
         }
@@ -154,9 +209,9 @@ namespace AudioSystem
         /// <param name="name"></param>
         /// <param name="goOrigin"></param>
         /// <returns>The associated CustomAudioPlayer with the Sound Played</returns>
-        public CustomAudioPlayer Play(string name, GameObject goOrigin)
+        public AudioPlayer Play(string name, GameObject goOrigin)
         {
-            CustomAudioPlayer player;
+            AudioPlayer player;
             player = DefaultPlay(name);
             player.gameObject.transform.parent = goOrigin.transform;
             player.gameObject.transform.position = goOrigin.transform.position;
@@ -172,9 +227,9 @@ namespace AudioSystem
         /// <param name="name"></param>
         /// <param name="posOrigin"></param>
         /// <returns></returns>
-        public CustomAudioPlayer Play(string name, Vector3 posOrigin)
+        public AudioPlayer Play(string name, Vector3 posOrigin)
         {
-            CustomAudioPlayer player;
+            AudioPlayer player;
             player = DefaultPlay(name);
             player.transform.position = posOrigin;
 
@@ -187,15 +242,15 @@ namespace AudioSystem
         /// </summary>
         /// <param name="sounds"></param>
         /// <returns></returns>
-        public CustomAudioPlayer[] PlayInSequence(string[] sounds)
+        public AudioPlayer[] PlayInSequence(string[] sounds)
         {
-            CustomAudioPlayer[] players = new CustomAudioPlayer[sounds.Length];
+            AudioPlayer[] players = new AudioPlayer[sounds.Length];
             int i = 0;
             foreach (string sound in sounds)
             {
                 string cleanedSound = sound.Replace(" ", "");
                 players[i] = Play(cleanedSound);
-                players[i].audioSource.Pause();
+                players[i].AudioSource.Pause();
                 i++;
             }
             StartCoroutine(IPlayInSequence(players));
@@ -207,24 +262,24 @@ namespace AudioSystem
         /// </summary>
         /// <param name="sounds"></param>
         /// <returns></returns>
-        public CustomAudioPlayer[] PlayInSequence(string sounds)
+        public AudioPlayer[] PlayInSequence(string sounds)
         {
             string[] soundsSegmented = sounds.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
             return PlayInSequence(soundsSegmented);
         }
-        private IEnumerator IPlayInSequence(CustomAudioPlayer[] players)
+        private IEnumerator IPlayInSequence(AudioPlayer[] players)
         {
             //print("About to play " + players.Length + " audio tracks");
-            foreach (CustomAudioPlayer player in players)
+            foreach (AudioPlayer player in players)
             {
                 if (player == null) continue;
-                player.audioSource.Play();
+                player.AudioSource.Play();
                 //print("Now playing " + player.soundClass.name);
                 while (true)
                 {
-                    if (player.audioSource == null) break;
-                    if (player.audioSource.time >= player.audioSource.clip.length) break;
+                    if (player.AudioSource == null) break;
+                    if (player.AudioSource.time >= player.AudioSource.clip.length) break;
                     yield return null;
                 }
             }
@@ -245,7 +300,7 @@ namespace AudioSystem
         }
         public float SoundTypeVolume(SoundType type)
         {
-            float v = Volumes[SoundType.Master] * Volumes[type];
+            float v = s_Volumes[SoundType.Master] * s_Volumes[type];
             return v;
         }
 
@@ -271,11 +326,11 @@ namespace AudioSystem
         /// Handles stopping audio and then handling it's removal from the scene
         /// </summary>
         /// <param name="player"></param>
-        public void StopAudio(CustomAudioPlayer player)
+        public void StopAudio(AudioPlayer player)
         {
             if (player == null) return;
             if (overtimeEffects.Keys.Contains(player)) StopOvertimeEffect(player);
-            player.audioSource.Stop();
+            player.AudioSource.Stop();
             Destroy(player.gameObject);
         }
 
@@ -285,16 +340,16 @@ namespace AudioSystem
         /// <param name="soundType"></param>
         public void StopAllAudioOfType(SoundType soundType)
         {
-            foreach (CustomAudioPlayer ap in FindObjectsOfType<CustomAudioPlayer>())
+            foreach (AudioPlayer ap in FindObjectsOfType<AudioPlayer>())
             {
-                if (ap.soundClass.type != soundType) return;
+                if (ap.SoundClass.type != soundType) return;
                 StopAudio(ap);
             }
         }
 
         public void StopAllAudio()
         {
-            foreach (CustomAudioPlayer ap in FindObjectsOfType<CustomAudioPlayer>())
+            foreach (AudioPlayer ap in FindObjectsOfType<AudioPlayer>())
             {
                 StopAudio(ap);
             }
@@ -324,7 +379,7 @@ namespace AudioSystem
 
         public void SetAudioLevel(SoundType type, float level)
         {
-            Volumes[type] = level;
+            s_Volumes[type] = level;
             UpdateAllAudio();
         }
 
@@ -335,7 +390,7 @@ namespace AudioSystem
         public void UpdateAllAudio()
         {
 
-            foreach (CustomAudioPlayer player in AllPlayersInScene)
+            foreach (AudioPlayer player in AllPlayersInScene)
             {
                 UpdateAudio(player);
             }
@@ -346,30 +401,30 @@ namespace AudioSystem
         /// however can be called if needed for only 1 piece of audio
         /// </summary>
         /// <param name="player"></param>
-        public void UpdateAudio(CustomAudioPlayer player)
+        public void UpdateAudio(AudioPlayer player)
         {
-            AdjustAudioSource(player.audioSource, player.soundClass);
+            AdjustAudioSource(player.AudioSource, player.SoundClass);
         }
 
         public void PauseAllAudio()
         {
 
-            foreach (CustomAudioPlayer player in AllPlayersInScene)
+            foreach (AudioPlayer player in AllPlayersInScene)
             {
                 print(AllPlayersInScene.Length);
-                if (!player.audioSource.isPlaying) break;
+                if (!player.AudioSource.isPlaying) break;
                 player.wasPausedByESC = true;
-                player.audioSource.Pause();
-                print(player.soundClass.name + " was paused");
+                player.AudioSource.Pause();
+                print(player.SoundClass.name + " was paused");
             }
         }
         public void UnpauseAllAudio()
         {
-            foreach (CustomAudioPlayer player in AllPlayersInScene)
+            foreach (AudioPlayer player in AllPlayersInScene)
             {
                 if (player.wasPausedByESC)
                 {
-                    player.audioSource.UnPause();
+                    player.AudioSource.UnPause();
                 }
             }
         }
@@ -382,7 +437,7 @@ namespace AudioSystem
         /// <param name="In"></param>
         /// <param name="Out"></param>
         /// <param name="fadeTime"></param>
-        public void CrossFade(CustomAudioPlayer In, CustomAudioPlayer Out, float fadeTime)
+        public void CrossFade(AudioPlayer In, AudioPlayer Out, float fadeTime)
         {
             FadeIn(In, fadeTime);
             FadeOut(Out, fadeTime);
@@ -393,7 +448,7 @@ namespace AudioSystem
         /// </summary>
         /// <param name="In"></param>
         /// <param name="Out"></param>
-        public void CrossFade(CustomAudioPlayer In, CustomAudioPlayer Out)
+        public void CrossFade(AudioPlayer In, AudioPlayer Out)
         {
             CrossFade(In, Out, defaultFadeTime);
         }
@@ -406,12 +461,12 @@ namespace AudioSystem
         /// <param name="In"></param>
         /// <param name="Out"></param>
         /// <param name="fadeTime"></param>
-        public void FadeIn(CustomAudioPlayer In, float fadeTime, bool fromCurrentVol)
+        public void FadeIn(AudioPlayer In, float fadeTime, bool fromCurrentVol)
         {
             Fade(In, fadeTime, fromCurrentVol, true);
         }
 
-        public void FadeIn(CustomAudioPlayer In, float fadeTime)
+        public void FadeIn(AudioPlayer In, float fadeTime)
         {
             Fade(In, fadeTime, false, true);
         }
@@ -421,7 +476,7 @@ namespace AudioSystem
         /// </summary>
         /// <param name="In"></param>
         /// <param name="Out"></param>
-        public void FadeIn(CustomAudioPlayer In)
+        public void FadeIn(AudioPlayer In)
         {
             FadeIn(In, defaultFadeTime);
         }
@@ -431,7 +486,7 @@ namespace AudioSystem
         /// </summary>
         /// <param name="In"></param>
         /// <param name="Out"></param>
-        public void FadeIn(CustomAudioPlayer In, bool fromCurrentVol)
+        public void FadeIn(AudioPlayer In, bool fromCurrentVol)
         {
             FadeIn(In, defaultFadeTime, fromCurrentVol);
         }
@@ -439,22 +494,22 @@ namespace AudioSystem
         #endregion
 
 
-        private IEnumerator FadeInEnum(CustomAudioPlayer In, float fadeTime, bool fromCurrentVol)
+        private IEnumerator FadeInEnum(AudioPlayer In, float fadeTime, bool fromCurrentVol)
         {
 
             //Creates variables outside of loop
             bool finished = false;
             float timeTaken = 0;
-            float startVol = fromCurrentVol ? In.audioSource.volume : 0;
+            float startVol = fromCurrentVol ? In.AudioSource.volume : 0;
             //If the audio isn't already playing just plays it
-            if (!In.audioSource.isPlaying) In.audioSource.Play();
+            if (!In.AudioSource.isPlaying) In.AudioSource.Play();
 
             //This runs every frame thanks to IEnumerator and the yield return null at the end.
             //It Lerps the audio up to its expected level based on modifiers over the specified time
             //Then when the volume has reached expected levels, finishes
             while (!finished)
             {
-                In.audioSource.volume = Mathf.Lerp(startVol, SoundTypeVolume(In.soundClass), (timeTaken / fadeTime));
+                In.AudioSource.volume = Mathf.Lerp(startVol, SoundTypeVolume(In.SoundClass), (timeTaken / fadeTime));
                 if (timeTaken >= fadeTime)
                 {
                     finished = true;
@@ -472,7 +527,7 @@ namespace AudioSystem
         /// <param name="In"></param>
         /// <param name="Out"></param>
         /// <param name="fadeTime"></param>
-        public void FadeOut(CustomAudioPlayer Out, float fadeTime)
+        public void FadeOut(AudioPlayer Out, float fadeTime)
         {
             Fade(Out, fadeTime, false, false);
         }
@@ -482,7 +537,7 @@ namespace AudioSystem
         /// </summary>
         /// <param name="In"></param>
         /// <param name="Out"></param>
-        public void FadeOut(CustomAudioPlayer Out)
+        public void FadeOut(AudioPlayer Out)
         {
             FadeOut(Out, defaultFadeTime);
         }
@@ -494,12 +549,12 @@ namespace AudioSystem
         /// <param name="Out"></param>
         /// <param name="fadeTime"></param>
         /// <returns></returns>
-        private IEnumerator FadeOutEnum(CustomAudioPlayer Out, float fadeTime)
+        private IEnumerator FadeOutEnum(AudioPlayer Out, float fadeTime)
         {
             //Creates variables outside of loop
             bool finished = false;
             float timeTaken = 0;
-            float outStartVol = Out.audioSource.volume;
+            float outStartVol = Out.AudioSource.volume;
 
             //This runs every frame thanks to IEnumerator and the yield return null at the end.
             //It lerps between the current audio's level down to 0 over the specified time
@@ -507,7 +562,7 @@ namespace AudioSystem
             while (!finished)
             {
                 if (!Out) yield break;
-                Out.audioSource.volume = Mathf.Lerp(outStartVol, 0, (timeTaken / fadeTime));
+                Out.AudioSource.volume = Mathf.Lerp(outStartVol, 0, (timeTaken / fadeTime));
                 if (timeTaken >= fadeTime)
                 {
                     finished = true;
@@ -520,7 +575,7 @@ namespace AudioSystem
         }
         #endregion
 
-        private void Fade(CustomAudioPlayer x, float fadeTime, bool fromCurrentVol, bool In)
+        private void Fade(AudioPlayer x, float fadeTime, bool fromCurrentVol, bool In)
         {
             if (x == null) return;
             if (overtimeEffects.Keys.Contains(x))
@@ -534,7 +589,7 @@ namespace AudioSystem
 
         #endregion
 
-        public void StopOvertimeEffect(CustomAudioPlayer player)
+        public void StopOvertimeEffect(AudioPlayer player)
         {
             if (!overtimeEffects.ContainsKey(player)) return;
             Coroutine toStop = overtimeEffects[player];

@@ -7,16 +7,10 @@ public class AudioTester : MonoBehaviour
 {
     private AudioManager m_AudioManager;
 
-
-    // Start is called before the first frame update
-    void Start()
+    [ContextMenu("Singles/SingleTest")]
+    private void SingleTest()
     {
-        
+        AudioPlayer x = AudioManager.DefaultPlay("itboy");
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }
