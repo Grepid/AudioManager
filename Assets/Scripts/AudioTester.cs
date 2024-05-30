@@ -5,12 +5,16 @@ using AudioSystem;
 
 public class AudioTester : MonoBehaviour
 {
-    private AudioManager m_AudioManager;
-
     [ContextMenu("Singles/SingleTest")]
     private void SingleTest()
     {
         AudioPlayer x = AudioManager.DefaultPlay("itboy");
+        x?.BindToAudioEnd(this, "TestMessage");
+    }
+
+    private void TestMessage()
+    {
+        print("Message recieved");
     }
     
 }
