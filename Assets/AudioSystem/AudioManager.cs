@@ -7,7 +7,7 @@ using System.Linq;
 
 //TO-DO
 
-//Change everything to Static methods referencing the instance
+//Change everything to Static methods referencing the instance \\-||
 //Add Instance Null checks to the start of every method
 //Move from instantiate every call to a grab from a pool
 //Add every form of action you can take on an AudioPlayer to the AudioPlayer class passing "this" as the AudioPlayer parameter
@@ -166,13 +166,6 @@ namespace AudioSystem
                 //Adds the type to the dictionary, and gives it a starting volume of 1 (100%)
                 s_Volumes.Add(type, 1);
             }
-            // Will set the audio levels to what it was saved at afterwards. If nothing was found, will just leave it at 100%
-            //TODO though
-            LoadSavedAudioLevels();
-        }
-        private static void LoadSavedAudioLevels()
-        {
-            // To be Implemented
         }
 
         #region PlaySounds

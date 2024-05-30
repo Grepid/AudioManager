@@ -293,7 +293,6 @@ MonoBehaviour:
     minDistance: 1000
     maxDistance: 1000
     dopplerLevel: 0
-  currentMusic: {fileID: 0}
 --- !u!4 &1538913942
 Transform:
   m_ObjectHideFlags: 0
