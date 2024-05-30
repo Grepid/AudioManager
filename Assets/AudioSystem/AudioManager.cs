@@ -8,10 +8,13 @@ using System.Linq;
 //TO-DO
 
 //Change everything to Static methods referencing the instance \\-||
-//Add Instance Null checks to the start of every method
+//Add Instance Null checks to the start of every method --- Somewhat Done (Debating whether or not to have a requirement
+//To do most actions to include having a sound. The thought process is if you don't have a sound, you would never have a player to manipulate)
 //Move from instantiate every call to a grab from a pool
 //Add every form of action you can take on an AudioPlayer to the AudioPlayer class passing "this" as the AudioPlayer parameter
 //Allow binding of multiple string methods to the end of audio player \\-||
+
+//ORGANISE AND COMMENT. USE REGIONS AND SUCH
 
 
 namespace AudioSystem
@@ -193,8 +196,7 @@ namespace AudioSystem
             AdjustAudioSource(audSource, s);
 
             AudioPlayer player = focus.AddComponent<AudioPlayer>();
-            player.AudioSource = audSource;
-            player.SoundClass = s;
+            player.Initialise(audSource, s);
 
 
 
@@ -266,6 +268,7 @@ namespace AudioSystem
         /// <returns></returns>
         public static AudioPlayer[] PlayInSequence(string[] sounds)
         {
+            if (!FullValidCheck) return null;
             AudioPlayer[] players = new AudioPlayer[sounds.Length];
             int i = 0;
             foreach (string sound in sounds)
@@ -318,12 +321,14 @@ namespace AudioSystem
         /// <returns>The 0 to 1 Float representing the volume that specific Audio clip should be at</returns>
         public static float SoundTypeVolume(SoundType type)
         {
+            if (!FullValidCheck) return 0;
             float v = s_Volumes[SoundType.Master] * s_Volumes[type];
             return v;
         }
 
         public static void SetTypeVolume(SoundType type, float volume)
         {
+            if (!FullValidCheck) return;
             s_Volumes[type] = volume;
         }
 
@@ -333,6 +338,7 @@ namespace AudioSystem
         /// <param name="player"></param>
         public static void StopAudio(AudioPlayer player)
         {
+            if (!FullValidCheck) return;
             if (player == null) return;
             if (overtimeEffects.Keys.Contains(player)) StopOvertimeEffect(player);
             player.AudioSource.Stop();
@@ -345,7 +351,8 @@ namespace AudioSystem
         /// <param name="soundType"></param>
         public static void StopAllAudioOfType(SoundType soundType)
         {
-            foreach (AudioPlayer ap in FindObjectsOfType<AudioPlayer>())
+            if (!FullValidCheck) return;
+            foreach (AudioPlayer ap in AllActiveAudio)
             {
                 if (ap.SoundClass.type != soundType) return;
                 StopAudio(ap);
@@ -354,7 +361,8 @@ namespace AudioSystem
 
         public static void StopAllAudio()
         {
-            foreach (AudioPlayer ap in FindObjectsOfType<AudioPlayer>())
+            if (!FullValidCheck) return;
+            foreach (AudioPlayer ap in AllActiveAudio)
             {
                 StopAudio(ap);
             }
@@ -367,6 +375,7 @@ namespace AudioSystem
         /// <param name="sound"></param>
         public static void AdjustAudioSource(AudioSource source, Sound sound)
         {
+            if (!FullValidCheck) return;
             source.clip = sound.clip;
 
             source.volume = SoundTypeVolume(sound.type);
@@ -382,19 +391,13 @@ namespace AudioSystem
             source.dopplerLevel = sound.dopplerLevel;
         }
 
-        public static void SetAudioLevel(SoundType type, float level)
-        {
-            s_Volumes[type] = level;
-            UpdateAllAudio();
-        }
-
         /// <summary>
         /// Will update all audio clips in the scene to have the most up to date settings.
         /// Typically used for when Volume changes
         /// </summary>
         public static void UpdateAllAudio()
         {
-
+            if (!FullValidCheck) return;
             foreach (AudioPlayer player in AllPlayersInScene)
             {
                 UpdateAudio(player);
@@ -408,12 +411,13 @@ namespace AudioSystem
         /// <param name="player"></param>
         public static void UpdateAudio(AudioPlayer player)
         {
+            if (!FullValidCheck) return;
             AdjustAudioSource(player.AudioSource, player.SoundClass);
         }
 
         public static void PauseAllAudio()
         {
-
+            if (!FullValidCheck) return;
             foreach (AudioPlayer player in AllPlayersInScene)
             {
                 if (!player.AudioSource.isPlaying) break;
@@ -424,6 +428,7 @@ namespace AudioSystem
         }
         public static void UnpauseAllAudio()
         {
+            if (!FullValidCheck) return;
             foreach (AudioPlayer player in AllPlayersInScene)
             {
                 if (player.wasPausedByESC)
@@ -581,6 +586,7 @@ namespace AudioSystem
 
         private static void Fade(AudioPlayer x, float fadeTime, bool fromCurrentVol, bool In)
         {
+            if (!FullValidCheck) return;
             if (x == null) return;
             if (overtimeEffects.Keys.Contains(x))
             {
@@ -595,6 +601,7 @@ namespace AudioSystem
 
         public static void StopOvertimeEffect(AudioPlayer player)
         {
+            if (!FullValidCheck) return;
             if (!overtimeEffects.ContainsKey(player)) return;
             Coroutine toStop = overtimeEffects[player];
             overtimeEffects.Remove(player);
