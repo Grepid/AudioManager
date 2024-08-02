@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using UnityEngine.ProBuilder.Shapes;
 
 //TO-DO
 
@@ -21,6 +22,8 @@ namespace AudioSystem
 {
     public class AudioManager : MonoBehaviour
     {
+        public const float defaultFadeTime = 1;
+        public const string sourceObjName = "SourceMaster";
 
         [Tooltip("The sole singleton instance of this class")]
         private static AudioManager s_instance;
@@ -39,7 +42,7 @@ namespace AudioSystem
 
 
         [Tooltip("The name that the GameObject created when playing a sound will be given for identification purposes")]
-        public string TempSoundSourceIdentifier;
+        public string SoundSourceIdentifier;
 
 
 
@@ -73,7 +76,6 @@ namespace AudioSystem
             private set;
         }
 
-        public const float defaultFadeTime = 1;
 
         public static List<AudioPlayer> AllActiveAudio
         {
@@ -82,6 +84,10 @@ namespace AudioSystem
                 return AllPlayersInScene.FindAll(x => x.AudioSource.isPlaying);
             }
         }
+
+        private static List<GameObject> soundSources = new List<GameObject>();
+        private static GameObject masterSource;
+        public int sourcePoolCount;
 
 
         #region Catches
@@ -153,6 +159,27 @@ namespace AudioSystem
             overtimeEffects = new Dictionary<AudioPlayer, Coroutine>();
             AllPlayersInScene = new List<AudioPlayer>();
             SetupVolumes();
+            SpawnAudioSources();
+        }
+
+        private void SpawnAudioSources()
+        {
+            masterSource = new GameObject(sourceObjName);
+            for(int i = 0; i< sourcePoolCount; i++)
+            {
+                NewSource();
+            }
+        }
+        private GameObject NewSource()
+        {
+            GameObject go = new GameObject(SoundSourceIdentifier + soundSources.Count);
+            go.transform.parent = masterSource.transform;
+            AudioSource audSource = go.AddComponent<AudioSource>();
+            AudioPlayer player = go.AddComponent<AudioPlayer>();
+            //soundSources.Add(go);
+            //print(go.name);
+            go.SetActive(false);
+            return go;
         }
 
         /// <summary>
@@ -171,6 +198,18 @@ namespace AudioSystem
             }
         }
 
+        private static GameObject GetValidSource()
+        {
+            if (!FullValidCheck) return null;
+            GameObject result = soundSources.Find(s => !s.activeSelf);
+            if (result == null)
+            {
+                result = Instance.NewSource();   
+            }
+            return result;
+        }
+
+
         #region PlaySounds
 
         /// <summary>
@@ -182,7 +221,8 @@ namespace AudioSystem
         public static AudioPlayer DefaultPlay(string name)
         {
             if (!FullValidCheck) return null;
-            GameObject focus = new GameObject();
+            GameObject focus = GetValidSource();
+            //print(focus.name);
             Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
             if (s == null)
             {
@@ -190,12 +230,42 @@ namespace AudioSystem
                 s = new Sound();
             }
 
-            focus.name = Instance.TempSoundSourceIdentifier;
-
-            AudioSource audSource = focus.AddComponent<AudioSource>();
+            AudioSource audSource = focus.GetComponent<AudioSource>();
+            print(audSource);
+            audSource = new AudioSource();
             AdjustAudioSource(audSource, s);
 
-            AudioPlayer player = focus.AddComponent<AudioPlayer>();
+            //FIX THIS AREA
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            // PLEASE DO IT 
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+            //
+
+
+            AudioPlayer player = focus.GetComponent<AudioPlayer>();
+            player = new AudioPlayer();
             player.Initialise(audSource, s);
 
 
@@ -342,7 +412,9 @@ namespace AudioSystem
             if (player == null) return;
             if (overtimeEffects.Keys.Contains(player)) StopOvertimeEffect(player);
             player.AudioSource.Stop();
-            Destroy(player.gameObject);
+            player.transform.parent = masterSource.transform;
+            player.gameObject.SetActive(false);
+            //Destroy(player.gameObject);
         }
 
         /// <summary>
@@ -376,6 +448,8 @@ namespace AudioSystem
         public static void AdjustAudioSource(AudioSource source, Sound sound)
         {
             if (!FullValidCheck) return;
+            //print(source);
+            //print(sound);
             source.clip = sound.clip;
 
             source.volume = SoundTypeVolume(sound.type);

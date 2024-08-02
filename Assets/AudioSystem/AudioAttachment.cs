@@ -13,8 +13,6 @@ public class AudioAttachment : MonoBehaviour
 {
     [NonReorderable]
     public AttachmentEvent[] events;
-    //public string SoundName;
-    //public bool PlayOnStart;
 
     void Start()
     {
