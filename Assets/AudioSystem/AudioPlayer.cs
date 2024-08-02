@@ -31,7 +31,7 @@ namespace AudioSystem
 
         private void Update()
         {
-            if (!AudioSource){ Destroy(gameObject); return; }
+            if (!AudioSource || !AudioSource.clip){ Destroy(gameObject); return; }
             if(AudioSource.time >= AudioSource.clip.length && !SoundClass.loop)
             {
                 foreach(KeyValuePair<MonoBehaviour, string> pair in bindActions)
