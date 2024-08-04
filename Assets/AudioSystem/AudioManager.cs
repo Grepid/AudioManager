@@ -11,7 +11,7 @@ using UnityEngine.ProBuilder.Shapes;
 //Change everything to Static methods referencing the instance \\-||
 //Add Instance Null checks to the start of every method --- Somewhat Done (Debating whether or not to have a requirement
 //To do most actions to include having a sound. The thought process is if you don't have a sound, you would never have a player to manipulate)
-//Move from instantiate every call to a grab from a pool
+//Move from instantiate every call to a grab from a pool \\-||
 //Add every form of action you can take on an AudioPlayer to the AudioPlayer class passing "this" as the AudioPlayer parameter
 //Allow binding of multiple string methods to the end of audio player \\-||
 

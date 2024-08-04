@@ -98,6 +98,31 @@ public class AudioAttachment : MonoBehaviour
 
     public void Play(AttachmentEvent e)
     {
-        AudioManager.Play(e.soundName);
+        switch (e.followType)
+        {
+            case SoundFollowType.None:
+                AudioManager.Play(e.soundName, transform.position);
+                break;
+
+            case SoundFollowType.Camera:
+                AudioManager.Play(e.soundName, Camera.main.gameObject,true);
+                break;
+
+            case SoundFollowType.Self:
+                AudioManager.Play(e.soundName, gameObject, true);
+                break;
+
+            case SoundFollowType.Target:
+                if(e.followTarget == null)
+                {
+                    Debug.LogWarning("Target is null, yet you want the audio to follow it");
+                    e.followType = SoundFollowType.None;
+                    Play(e);
+                    return;
+                }
+                AudioManager.Play(e.soundName, e.followTarget, true);
+                break;
+        }
+        //AudioManager.Play(e.soundName);
     }
 }
