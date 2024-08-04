@@ -179,7 +179,7 @@ namespace AudioSystem
             AudioPlayer player = go.AddComponent<AudioPlayer>();
             player.Initialise(audSource, null);
             soundSources.Add(player);
-            go.SetActive(false);
+            //go.SetActive(false);
             return player;
         }
 
@@ -202,11 +202,11 @@ namespace AudioSystem
         private static AudioPlayer GetValidSource()
         {
             if (!FullValidCheck) return null;
-            AudioPlayer result = soundSources.Find(s => !s.gameObject.activeSelf);
+            AudioPlayer result = soundSources.Find(s => s != null && !s.AudioSource.isPlaying && !s.wasPausedByESC);
             if (result == null)
             {
                 result = Instance.NewSource();
-                Debug.LogWarning("You are calling for more Audio Sources than are in the pool. This could result in small jitters." +
+                Debug.LogWarning("You are calling for more Audio Sources than are in the pool. This could result in small jitters. " +
                     "try increasing the Pool Count");
             }
             return result;
@@ -225,8 +225,7 @@ namespace AudioSystem
         {
             if (!FullValidCheck) return null;
             AudioPlayer focus = GetValidSource();
-            focus.gameObject.SetActive(true);
-            //print(focus.name);
+            //focus.gameObject.SetActive(true);
             Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
             if (s == null)
             {
@@ -257,8 +256,15 @@ namespace AudioSystem
         public static AudioPlayer Play(string name)
         {
             AudioPlayer player;
-            player = Play(name, Camera.main.gameObject);
+            player = Play(name, Camera.main.gameObject,true);
             return player;
+            
+            
+            /*AudioSource so = Camera.main.gameObject.AddComponent<AudioSource>();
+            so.clip = Instance.Sounds[0].clip;
+            so.Play();
+            print("Dumb shit initiated");
+            return null;*/
         }
 
         /// <summary>
@@ -269,12 +275,16 @@ namespace AudioSystem
         /// <param name="name"></param>
         /// <param name="goOrigin"></param>
         /// <returns>The associated CustomAudioPlayer with the Sound Played</returns>
-        public static AudioPlayer Play(string name, GameObject goOrigin)
+        public static AudioPlayer Play(string name, GameObject goOrigin,bool shouldFollow)
         {
             AudioPlayer player;
             player = DefaultPlay(name);
-            player.gameObject.transform.parent = goOrigin.transform;
             player.gameObject.transform.position = goOrigin.transform.position;
+            if (shouldFollow)
+            {
+                player.followTarget = true;
+                player.target = goOrigin;
+            }
 
             return player;
         }
@@ -385,8 +395,7 @@ namespace AudioSystem
 
         private static void ReturnSourceToMaster(AudioPlayer player)
         {
-            player.transform.parent = masterSource.transform;
-            player.gameObject.SetActive(false);
+            //player.gameObject.SetActive(false);
         }
 
         /// <summary>

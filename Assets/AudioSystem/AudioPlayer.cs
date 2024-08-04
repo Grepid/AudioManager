@@ -8,6 +8,8 @@ namespace AudioSystem
     //NEED TO COMMENT AND ORGANISE
     public class AudioPlayer : MonoBehaviour
     {
+        public bool followTarget;
+        public GameObject target;
         public bool wasPausedByESC;
         private List<KeyValuePair<MonoBehaviour,string>> bindActions = new List<KeyValuePair<MonoBehaviour,string>>();
         public AudioSource AudioSource
@@ -36,6 +38,10 @@ namespace AudioSystem
                     pair.Key.SendMessage(pair.Value);
                 }
                 Stop();
+            }
+            if (followTarget)
+            {
+                transform.position = target.transform.position;
             }
         }
         public void BindToAudioEnd(MonoBehaviour target, string methodName)
