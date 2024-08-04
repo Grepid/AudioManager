@@ -123,6 +123,5 @@ public class AudioAttachment : MonoBehaviour
                 AudioManager.Play(e.soundName, e.followTarget, true);
                 break;
         }
-        //AudioManager.Play(e.soundName);
     }
 }
