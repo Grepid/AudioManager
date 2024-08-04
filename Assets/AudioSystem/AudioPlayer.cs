@@ -38,7 +38,7 @@ namespace AudioSystem
                 {
                     pair.Key.SendMessage(pair.Value);
                 }
-                Destroy(gameObject);
+                Stop();
             }
         }
         public void BindToAudioEnd(MonoBehaviour target, string methodName)

@@ -176,8 +176,7 @@ namespace AudioSystem
             go.transform.parent = masterSource.transform;
             AudioSource audSource = go.AddComponent<AudioSource>();
             AudioPlayer player = go.AddComponent<AudioPlayer>();
-            //soundSources.Add(go);
-            //print(go.name);
+            soundSources.Add(go);
             go.SetActive(false);
             return go;
         }
@@ -204,7 +203,9 @@ namespace AudioSystem
             GameObject result = soundSources.Find(s => !s.activeSelf);
             if (result == null)
             {
-                result = Instance.NewSource();   
+                result = Instance.NewSource();
+                Debug.LogWarning("You are calling for more Audio Sources than are in the pool. This could result in small jitters." +
+                    "try increasing the Pool Count");
             }
             return result;
         }
@@ -222,6 +223,7 @@ namespace AudioSystem
         {
             if (!FullValidCheck) return null;
             GameObject focus = GetValidSource();
+            focus.SetActive(true);
             //print(focus.name);
             Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
             if (s == null)
@@ -232,7 +234,7 @@ namespace AudioSystem
 
             AudioSource audSource = focus.GetComponent<AudioSource>();
             print(audSource);
-            audSource = new AudioSource();
+            //audSource = new AudioSource();
             AdjustAudioSource(audSource, s);
 
             //FIX THIS AREA
@@ -265,7 +267,7 @@ namespace AudioSystem
 
 
             AudioPlayer player = focus.GetComponent<AudioPlayer>();
-            player = new AudioPlayer();
+            //player = new AudioPlayer();
             player.Initialise(audSource, s);
 
 
