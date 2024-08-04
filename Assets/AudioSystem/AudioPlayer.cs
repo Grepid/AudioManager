@@ -8,7 +8,6 @@ namespace AudioSystem
     //NEED TO COMMENT AND ORGANISE
     public class AudioPlayer : MonoBehaviour
     {
-        bool m_initialised;
         public bool wasPausedByESC;
         private List<KeyValuePair<MonoBehaviour,string>> bindActions = new List<KeyValuePair<MonoBehaviour,string>>();
         public AudioSource AudioSource
@@ -23,15 +22,13 @@ namespace AudioSystem
         }
         public void Initialise(AudioSource source,Sound sound)
         {
-            if (m_initialised) return;
             AudioSource = source;
             SoundClass = sound;
-            m_initialised = true;
         }
 
         private void Update()
         {
-            if (!AudioSource || !AudioSource.clip){ Destroy(gameObject); return; }
+            if (!AudioSource || !AudioSource.clip){ Stop(); return; }
             if(AudioSource.time >= AudioSource.clip.length && !SoundClass.loop)
             {
                 foreach(KeyValuePair<MonoBehaviour, string> pair in bindActions)
@@ -58,7 +55,6 @@ namespace AudioSystem
         public void Stop()
         {
             AudioManager.StopAudio(this);
-            print("Test sdfisdf");
         } 
         public void UpdateAudio()
         {

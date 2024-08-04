@@ -72,8 +72,10 @@ namespace AudioSystem
 
         public static List<AudioPlayer> AllPlayersInScene
         {
-            get;
-            private set;
+            get
+            {
+                return soundSources.FindAll(s => s.gameObject.activeSelf);
+            }
         }
 
 
@@ -85,7 +87,7 @@ namespace AudioSystem
             }
         }
 
-        private static List<GameObject> soundSources = new List<GameObject>();
+        private static List<AudioPlayer> soundSources = new List<AudioPlayer>();
         private static GameObject masterSource;
         public int sourcePoolCount;
 
@@ -157,7 +159,6 @@ namespace AudioSystem
         private void Initialise()
         {
             overtimeEffects = new Dictionary<AudioPlayer, Coroutine>();
-            AllPlayersInScene = new List<AudioPlayer>();
             SetupVolumes();
             SpawnAudioSources();
         }
@@ -170,15 +171,16 @@ namespace AudioSystem
                 NewSource();
             }
         }
-        private GameObject NewSource()
+        private AudioPlayer NewSource()
         {
             GameObject go = new GameObject(SoundSourceIdentifier + soundSources.Count);
             go.transform.parent = masterSource.transform;
             AudioSource audSource = go.AddComponent<AudioSource>();
             AudioPlayer player = go.AddComponent<AudioPlayer>();
-            soundSources.Add(go);
+            player.Initialise(audSource, null);
+            soundSources.Add(player);
             go.SetActive(false);
-            return go;
+            return player;
         }
 
         /// <summary>
@@ -197,10 +199,10 @@ namespace AudioSystem
             }
         }
 
-        private static GameObject GetValidSource()
+        private static AudioPlayer GetValidSource()
         {
             if (!FullValidCheck) return null;
-            GameObject result = soundSources.Find(s => !s.activeSelf);
+            AudioPlayer result = soundSources.Find(s => !s.gameObject.activeSelf);
             if (result == null)
             {
                 result = Instance.NewSource();
@@ -222,8 +224,8 @@ namespace AudioSystem
         public static AudioPlayer DefaultPlay(string name)
         {
             if (!FullValidCheck) return null;
-            GameObject focus = GetValidSource();
-            focus.SetActive(true);
+            AudioPlayer focus = GetValidSource();
+            focus.gameObject.SetActive(true);
             //print(focus.name);
             Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
             if (s == null)
@@ -232,43 +234,9 @@ namespace AudioSystem
                 s = new Sound();
             }
 
-            AudioSource audSource = focus.GetComponent<AudioSource>();
-            print(audSource);
-            //audSource = new AudioSource();
+            AudioSource audSource = focus.AudioSource;
             AdjustAudioSource(audSource, s);
-
-            //FIX THIS AREA
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            // PLEASE DO IT 
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-            //
-
-
-            AudioPlayer player = focus.GetComponent<AudioPlayer>();
-            //player = new AudioPlayer();
-            player.Initialise(audSource, s);
+            focus.Initialise(audSource, s);
 
 
 
@@ -276,11 +244,7 @@ namespace AudioSystem
 
             audSource.Play();
 
-            //if (!audSource.loop) StartCoroutine(DestroyUsedAudio(focus));
-
-            AllPlayersInScene.Add(player);
-
-            return player;
+            return focus;
         }
 
         /// <summary>
@@ -373,7 +337,6 @@ namespace AudioSystem
             {
                 if (player == null) continue;
                 player.AudioSource.Play();
-                //print("Now playing " + player.soundClass.name);
                 while (true)
                 {
                     if (player.AudioSource == null) break;
@@ -411,12 +374,19 @@ namespace AudioSystem
         public static void StopAudio(AudioPlayer player)
         {
             if (!FullValidCheck) return;
-            if (player == null) return;
+            if (player == null) 
+            {
+                ReturnSourceToMaster(player);
+            }
             if (overtimeEffects.Keys.Contains(player)) StopOvertimeEffect(player);
             player.AudioSource.Stop();
+            ReturnSourceToMaster(player);
+        }
+
+        private static void ReturnSourceToMaster(AudioPlayer player)
+        {
             player.transform.parent = masterSource.transform;
             player.gameObject.SetActive(false);
-            //Destroy(player.gameObject);
         }
 
         /// <summary>
@@ -450,8 +420,6 @@ namespace AudioSystem
         public static void AdjustAudioSource(AudioSource source, Sound sound)
         {
             if (!FullValidCheck) return;
-            //print(source);
-            //print(sound);
             source.clip = sound.clip;
 
             source.volume = SoundTypeVolume(sound.type);
@@ -499,7 +467,6 @@ namespace AudioSystem
                 if (!player.AudioSource.isPlaying) break;
                 player.wasPausedByESC = true;
                 player.AudioSource.Pause();
-                //print(player.SoundClass.name + " was paused");
             }
         }
         public static void UnpauseAllAudio()
