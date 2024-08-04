@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
-using UnityEngine.ProBuilder.Shapes;
 
 //TO-DO
 
@@ -171,6 +170,9 @@ namespace AudioSystem
             SpawnAudioSources();
         }
 
+        /// <summary>
+        /// Spawns the amount of audio sources set by the manager
+        /// </summary>
         private void SpawnAudioSources()
         {
             masterSource = new GameObject(sourceObjName);
@@ -179,6 +181,11 @@ namespace AudioSystem
                 NewSource();
             }
         }
+
+        /// <summary>
+        /// Creates a new source object to be used for audio, and puts it in the list
+        /// </summary>
+        /// <returns></returns>
         private AudioPlayer NewSource()
         {
             GameObject go = new GameObject(SoundSourceIdentifier + soundSources.Count);
@@ -187,7 +194,6 @@ namespace AudioSystem
             AudioPlayer player = go.AddComponent<AudioPlayer>();
             player.Initialise(audSource, null);
             soundSources.Add(player);
-            //go.SetActive(false);
             return player;
         }
 
@@ -197,16 +203,19 @@ namespace AudioSystem
         /// </summary>
         private static void SetupVolumes()
         {
-            //Creates the empty dictionary
             s_Volumes = new Dictionary<SoundType, float>();
-            //Loops through every type there is in the Enum
+
+            //Loops through every type of sound there is and sets volume to 1
             foreach (SoundType type in Enum.GetValues(typeof(SoundType)))
             {
-                //Adds the type to the dictionary, and gives it a starting volume of 1 (100%)
                 s_Volumes.Add(type, 1);
             }
         }
 
+        /// <summary>
+        /// Returns an audio source that is not being used. If none exist, creates one
+        /// </summary>
+        /// <returns></returns>
         private static AudioPlayer GetValidSource()
         {
             if (!FullValidCheck) return null;
@@ -233,11 +242,11 @@ namespace AudioSystem
         {
             if (!FullValidCheck) return null;
             AudioPlayer focus = GetValidSource();
-            //focus.gameObject.SetActive(true);
-            Sound s = Array.Find(Instance.Sounds, sound => sound.name == name);
+            string cleanedSound = name.Trim();
+            Sound s = Array.Find(Instance.Sounds, sound => sound.name == cleanedSound);
             if (s == null)
             {
-                Debug.LogWarning("Sound not found");
+                Debug.LogWarning("Sound "+name+" not found");
                 s = new Sound();
             }
 
@@ -297,13 +306,6 @@ namespace AudioSystem
             AudioPlayer player;
             player = Play(name, Camera.main.gameObject,true);
             return player;
-            
-            
-            /*AudioSource so = Camera.main.gameObject.AddComponent<AudioSource>();
-            so.clip = Instance.Sounds[0].clip;
-            so.Play();
-            print("Dumb shit initiated");
-            return null;*/
         }
 
         /// <summary>
@@ -358,8 +360,7 @@ namespace AudioSystem
             int i = 0;
             foreach (string sound in sounds)
             {
-                string cleanedSound = sound.Replace(" ", "");
-                players[i] = Play(cleanedSound);
+                players[i] = Play(sound);
                 players[i].AudioSource.Pause();
                 i++;
             }
@@ -379,6 +380,8 @@ namespace AudioSystem
 
             return PlayInSequence(soundsSegmented);
         }
+
+
         private static IEnumerator IPlayInSequence(AudioPlayer[] players)
         {
             //print("About to play " + players.Length + " audio tracks");

@@ -3419,16 +3419,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SoundSourceIdentifier: SoundSouce
   Sounds:
-  - name: itboy
-    type: 0
-    clip: {fileID: 8300000, guid: 72a5574322a88bf4ca3bf271469fc003, type: 3}
-    volume: 1
-    pitch: 1
-    loop: 0
-    spatialBlend: 1
-    minDistance: 1000
-    maxDistance: 1000
-    dopplerLevel: 0
+  - {fileID: 11400000, guid: 6b85be6e1c99feb47ba1e862a3eb2d8c, type: 2}
   sourcePoolCount: 50
 --- !u!4 &1538913942
 Transform:

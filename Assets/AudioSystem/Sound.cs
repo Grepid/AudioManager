@@ -7,11 +7,9 @@ namespace AudioSystem
     public enum SoundType{Unset,Master,Music,UI,SFX}
 
     [System.Serializable]
-    public class Sound
+    [CreateAssetMenu(menuName = "Grepid/AudioSystem/Sound")]
+    public class Sound : ScriptableObject
     {
-        [Tooltip("The name you need to call in Code to be able to play this sound")]
-        public string name;
-
         [Tooltip("The type of sound that it is (Useful for sorting different volume levels)")]
         public SoundType type;
 
