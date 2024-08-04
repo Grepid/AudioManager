@@ -19,7 +19,7 @@ using System.Linq;
 //Allow binding of multiple string methods to the end of audio player \\-||
 
 // I kinnnnd of want to move to a Scriptable Object approach with the sounds. It means they're easier to change because they're
-// not cluttered in an array, and you can potentially even attach them to a GameObject to use that to call a sound from
+// not cluttered in an array, and you can potentially even attach them to a GameObject to use that to call a sound from \\-||
 
 //ORGANISE AND COMMENT. USE REGIONS AND SUCH
 //ALSO FOR THE LOVE OF GOD GET RID OF REDUNDENT CODE, AND MAKE THINGS USE 1 BASE FUNCTION ETC (e.g Play(string) and Play(Sound))
@@ -229,7 +229,113 @@ namespace AudioSystem
             return result;
         }
 
+        #region Sound Input
+        #region PlaySounds
 
+        /// <summary>
+        /// The base function for spawning audio. Will create a gameobject with a CustomAudio player and an AudioSource at 0,0,0.
+        /// Use this for specific use cases, otherwise use the Play() Overrides.
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
+        public static AudioPlayer DefaultPlay(Sound sound)
+        {
+            if (!FullValidCheck) return null;
+            AudioPlayer focus = GetValidSource();
+            AudioSource AS = focus.AudioSource;
+            AdjustAudioSource(AS, sound);
+            focus.Initialise(AS, sound);
+
+
+
+            AS.volume = SoundTypeVolume(sound.type);
+
+            AS.Play();
+
+            return focus;
+        }
+
+        /// <summary>
+        /// Lets you play a sound to the camera's position easily. Best for UI / 2D Audio
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
+        public static AudioPlayer Play(Sound sound)
+        {
+            AudioPlayer player;
+            player = Play(sound,Camera.main.gameObject,true);
+            return player;
+        }
+
+        /// <summary>
+        /// Lets you play a sound at a certain point in space. This will not move
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <param name="posOrigin"></param>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
+        public static AudioPlayer Play(Sound sound, Vector3 posOrigin)
+        {
+            AudioPlayer player;
+            player = DefaultPlay(sound);
+            player.transform.position = posOrigin;
+
+            return player;
+        }
+
+        /// <summary>
+        /// Lets you play a sound at the position of a certain object. This can then follow the object if you wish
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <param name="goOrigin"></param>
+        /// <param name="shouldFollow"></param>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
+        public static AudioPlayer Play(Sound sound, GameObject goOrigin, bool shouldFollow)
+        {
+            AudioPlayer player;
+            player = DefaultPlay(sound);
+            player.gameObject.transform.position = goOrigin.transform.position;
+            if (shouldFollow)
+            {
+                player.followTarget = true;
+                player.target = goOrigin;
+            }
+
+            return player;
+        }
+
+        /// <summary>
+        /// Takes a string of sounds and plays them 1 after the other.
+        /// </summary>
+        /// <param name="sounds"></param>
+        /// <returns>The array of CustomAudioPlayer instances in the respective order of how you inputed them.</returns>
+        public static AudioPlayer[] PlayInSequence(Sound[] sounds)
+        {
+            if (!FullValidCheck) return null;
+            AudioPlayer[] players = new AudioPlayer[sounds.Length];
+            int i = 0;
+            foreach (Sound sound in sounds)
+            {
+                players[i] = Play(sound);
+                players[i].AudioSource.Pause();
+                i++;
+            }
+            Instance.StartCoroutine(IPlayInSequence(players));
+
+            return players;
+        }
+
+
+        /// <summary>
+        /// Tracks the progression of a given sequence of AudioPlayers and plays them one after the other
+        /// </summary>
+        /// <param name="players"></param>
+        /// <returns></returns>
+
+
+        #endregion
+        #endregion
+
+        #region String Input
         #region PlaySounds
 
         /// <summary>
@@ -237,7 +343,7 @@ namespace AudioSystem
         /// Use this for specific use cases, otherwise use the Play() Overrides.
         /// </summary>
         /// <param name="name"></param>
-        /// <returns>CustomAudioPlayer attached to a GameObject for the sound played</returns>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
         public static AudioPlayer DefaultPlay(string name)
         {
             if (!FullValidCheck) return null;
@@ -261,36 +367,6 @@ namespace AudioSystem
             audSource.Play();
 
             return focus;
-        }
-
-        public static AudioPlayer Play(Sound sound)
-        {
-            AudioPlayer player;
-            player = Play(sound.name);
-            return player;
-        }
-
-        public static AudioPlayer Play(Sound sound, Vector3 posOrigin)
-        {
-            AudioPlayer player;
-            player = DefaultPlay(sound.name);
-            player.transform.position = posOrigin;
-
-            return player;
-        }
-
-        public static AudioPlayer Play(Sound sound, GameObject goOrigin, bool shouldFollow)
-        {
-            AudioPlayer player;
-            player = DefaultPlay(sound.name);
-            player.gameObject.transform.position = goOrigin.transform.position;
-            if (shouldFollow)
-            {
-                player.followTarget = true;
-                player.target = goOrigin;
-            }
-
-            return player;
         }
 
 
@@ -331,13 +407,12 @@ namespace AudioSystem
         }
 
         /// <summary>
-        /// Will use the DefaultPlay() Function to create a GameObject and CustomAudioPlayer then will
-        /// set the sound's position to the passed in V3.
+        /// Will Play a sound at a specific point in space.
         /// Typically used for playing audio that when created, will not move from where it was created (E.G Gunshot)
         /// </summary>
         /// <param name="name"></param>
         /// <param name="posOrigin"></param>
-        /// <returns></returns>
+        /// <returns>AudioPlayer attached to a GameObject for the sound played</returns>
         public static AudioPlayer Play(string name, Vector3 posOrigin)
         {
             AudioPlayer player;
@@ -348,11 +423,10 @@ namespace AudioSystem
         }
 
         /// <summary>
-        /// Used as the base of PlayInSequence but useable in its own write, it takes a string of sounds and plays them 1 after the other.
-        /// It returns the array of CustomAudioPlayer instances in the respective order of how you inputed them.
+        /// Takes a string of sounds and plays them 1 after the other.
         /// </summary>
         /// <param name="sounds"></param>
-        /// <returns></returns>
+        /// <returns>The array of CustomAudioPlayer instances in the respective order of how you inputed them.</returns>
         public static AudioPlayer[] PlayInSequence(string[] sounds)
         {
             if (!FullValidCheck) return null;
@@ -373,7 +447,7 @@ namespace AudioSystem
         /// Plays sounds 1 after eachother when given a string with names of sounds seperated with commas
         /// </summary>
         /// <param name="sounds"></param>
-        /// <returns></returns>
+        /// <returns>The array of CustomAudioPlayer instances in the respective order of how you inputed them.</returns>
         public static AudioPlayer[] PlayInSequence(string sounds)
         {
             string[] soundsSegmented = sounds.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -382,9 +456,13 @@ namespace AudioSystem
         }
 
 
+        /// <summary>
+        /// Tracks the progression of a given sequence of AudioPlayers and plays them one after the other
+        /// </summary>
+        /// <param name="players"></param>
+        /// <returns></returns>
         private static IEnumerator IPlayInSequence(AudioPlayer[] players)
         {
-            //print("About to play " + players.Length + " audio tracks");
             foreach (AudioPlayer player in players)
             {
                 if (player == null) continue;
@@ -399,6 +477,7 @@ namespace AudioSystem
         }
 
 
+        #endregion
         #endregion
 
         /// <summary>

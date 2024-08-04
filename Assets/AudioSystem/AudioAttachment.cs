@@ -101,15 +101,15 @@ public class AudioAttachment : MonoBehaviour
         switch (e.followType)
         {
             case SoundFollowType.None:
-                AudioManager.Play(e.soundName, transform.position);
+                AudioManager.Play(e.soundToPlay, transform.position);
                 break;
 
             case SoundFollowType.Camera:
-                AudioManager.Play(e.soundName, Camera.main.gameObject,true);
+                AudioManager.Play(e.soundToPlay, Camera.main.gameObject,true);
                 break;
 
             case SoundFollowType.Self:
-                AudioManager.Play(e.soundName, gameObject, true);
+                AudioManager.Play(e.soundToPlay, gameObject, true);
                 break;
 
             case SoundFollowType.Target:
@@ -120,7 +120,7 @@ public class AudioAttachment : MonoBehaviour
                     Play(e);
                     return;
                 }
-                AudioManager.Play(e.soundName, e.followTarget, true);
+                AudioManager.Play(e.soundToPlay, e.followTarget, true);
                 break;
         }
     }

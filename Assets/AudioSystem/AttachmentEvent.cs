@@ -14,9 +14,7 @@ public class AttachmentEvent
     public SoundFollowType followType;
     [Tooltip("The object the sound will follow. Leave Null if follow is not target.")]
     public GameObject followTarget;
-    [Tooltip("The name of the sound you want to play (It is recommended to not play looping audio as you do not " +
+    [Tooltip("The sound you want to play (It is recommended to not play looping audio as you do not " +
         "recieve a AudioPlayer to handle stopping it)")]
-    public string soundName;
-    [Tooltip("The sound object you want to play. Ignore if you are using name.")]
     public Sound soundToPlay;
 }
