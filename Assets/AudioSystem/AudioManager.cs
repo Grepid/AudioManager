@@ -9,13 +9,21 @@ using UnityEngine.ProBuilder.Shapes;
 //TO-DO
 
 //Change everything to Static methods referencing the instance \\-||
+
 //Add Instance Null checks to the start of every method --- Somewhat Done (Debating whether or not to have a requirement
 //To do most actions to include having a sound. The thought process is if you don't have a sound, you would never have a player to manipulate)
+
 //Move from instantiate every call to a grab from a pool \\-||
+
 //Add every form of action you can take on an AudioPlayer to the AudioPlayer class passing "this" as the AudioPlayer parameter
+
 //Allow binding of multiple string methods to the end of audio player \\-||
 
+// I kinnnnd of want to move to a Scriptable Object approach with the sounds. It means they're easier to change because they're
+// not cluttered in an array, and you can potentially even attach them to a GameObject to use that to call a sound from
+
 //ORGANISE AND COMMENT. USE REGIONS AND SUCH
+//ALSO FOR THE LOVE OF GOD GET RID OF REDUNDENT CODE, AND MAKE THINGS USE 1 BASE FUNCTION ETC (e.g Play(string) and Play(Sound))
 
 
 namespace AudioSystem
@@ -245,6 +253,37 @@ namespace AudioSystem
 
             return focus;
         }
+
+        public static AudioPlayer Play(Sound sound)
+        {
+            AudioPlayer player;
+            player = Play(sound.name);
+            return player;
+        }
+
+        public static AudioPlayer Play(Sound sound, Vector3 posOrigin)
+        {
+            AudioPlayer player;
+            player = DefaultPlay(sound.name);
+            player.transform.position = posOrigin;
+
+            return player;
+        }
+
+        public static AudioPlayer Play(Sound sound, GameObject goOrigin, bool shouldFollow)
+        {
+            AudioPlayer player;
+            player = DefaultPlay(sound.name);
+            player.gameObject.transform.position = goOrigin.transform.position;
+            if (shouldFollow)
+            {
+                player.followTarget = true;
+                player.target = goOrigin;
+            }
+
+            return player;
+        }
+
 
         /// <summary>
         /// Will use the DefaultPlay() Function to create a GameObject and CustomAudioPlayer then will
